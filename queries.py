@@ -48,29 +48,29 @@ class ActiveCaseGeneration:
                         data = [self.extract_properties(el) for el in flattened_data]
                         if j == 'p_nodes':
                             for node in data:
-                                node['node1'] = int(node.pop('activity_id'))
+                                node['node1'] = str(int(node.pop('activity_id')))
                                 node['e_v'] = "v"
                             prefixes = pd.concat([prefixes, pd.DataFrame(data)], ignore_index=True)
                         if j == 'p_rels' and data != []:
                             for rel in data:
                                 # for node 1 and node 2
                                 connnected_nodes = rel['connection'].split(':')[0].split('_')
-                                node1 = connnected_nodes[0]
-                                node2 = connnected_nodes[1]
+                                node1 = str(int(connnected_nodes[0]))
+                                node2 = str(int(connnected_nodes[1]))
                                 new_key1 = 'node1'
                                 new_key2 = 'node2'
-                                rel[new_key1] = int(node1)
-                                rel[new_key2] = int(node2)
+                                rel[new_key1] = str(int(node1))
+                                rel[new_key2] = str(int(node2))
                                 del rel['connection']
                                 # for track id
                                 rel['track_id'] = result['track_id'][i]
                                 rel['event_name'] = (
-                                        str(prefixes[(prefixes['node1'] == int(node1))
+                                        str(prefixes[(prefixes['node1'] == node1)
                                                      & (prefixes['track_id'] == result['track_id'][i])]
                                             ['event_name']).split()[1]
                                         + "__" +
-                                        str(prefixes[(prefixes['node1'] == int(node2)) & (prefixes['track_id']
-                                                                                          == result['track_id'][i])]
+                                        str(prefixes[(prefixes['node1'] == node2)
+                                                     & (prefixes['track_id'] == result['track_id'][i])]
                                             ['event_name']).split()[1])
                                 rel['e_v'] = "e"
                             prefixes = pd.concat([prefixes, pd.DataFrame(data)], ignore_index=True)
@@ -78,8 +78,7 @@ class ActiveCaseGeneration:
         prefixes['finish_time'] = prefixes['finish_time'].apply(lambda x: self.format_date(x) if pd.notna(x) else None)
         prefixes.to_csv('data/prefixes.csv', index=False)
         finish = time.time()
-        print(f"Time for prefix generation: {finish-start:.6f} seconds")
-
+        print(f"Time for prefix generation: {finish - start:.6f} seconds")
 
     def extract_properties(self, node):
         return node._properties
