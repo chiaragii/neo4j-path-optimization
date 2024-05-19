@@ -1,5 +1,3 @@
-# TODO: mettere config sul .gitignore
-
 import os
 import time
 import pandas as pd
