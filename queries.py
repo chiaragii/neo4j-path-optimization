@@ -1,3 +1,5 @@
+# TODO: mettere config sul .gitignore
+
 import os
 import time
 import pandas as pd
@@ -14,11 +16,6 @@ class ActiveCaseGeneration:
     def close(self):
         self.driver.close()
 
-    def print_greeting(self, message):
-        with self.driver.session() as session:
-            greeting = session.execute_write(self._create_and_return_greeting, message)
-            print(greeting)
-
     # function to format the DateTime object
     def format_date(self, dt):
         if dt is not None:
@@ -27,24 +24,67 @@ class ActiveCaseGeneration:
             return formatted_str
         return None
 
-    @staticmethod
-    def _create_and_return_greeting(tx, message):
-        result = tx.run("MATCH (e:Event) RETURN e.event_name", message=message)
-        return result.single()[0]
-
     def create_prefixes(self):
-        results = []
-        for i in range(1, 100):
-            result = self.driver.execute_query(
-                f"MATCH p = (s:Event) - [r *]->(e:Event) "
-                f"WHERE e.activity_id = {i} AND s.event_name = 'START' "
-                f"RETURN collect(nodes(p)) as nodes, collect(r) as relationship, e.track_id "
-                f"ORDER BY e.track_id",
-                database_="neo4j",
-                result_transformer_=neo4j.Result.to_df)
-            for res in result:
-                results.append(res)
-        return results
+        start = time.time()
+        prefixes = pd.DataFrame()
+        max_len = self.driver.execute_query("MATCH (n:Event) RETURN max(n.activity_id) AS max_activity_id")[0][0][0]
+        # Concatenating the empty row to the existing DataFrame
+        for k in range(1, max_len):
+            result = self.driver.execute_query(f"MATCH (e:Event) WHERE e.activity_id <= {k} "
+                                               f"WITH collect(e) AS p_nodes, e.track_id as track_id "
+                                               f"WHERE size(p_nodes)={k} "
+                                               f"UNWIND p_nodes AS node1 "
+                                               f"UNWIND p_nodes AS node2 "
+                                               f"OPTIONAL MATCH (node1)-[r]-(node2) "
+                                               f"RETURN DISTINCT p_nodes, collect(DISTINCT r) as p_rels, track_id "
+                                               f"ORDER BY track_id",
+                                               database_="neo4j",
+                                               result_transformer_=neo4j.Result.to_df)
+
+            for i in range(0, len(result)):
+                prefixes = prefixes.reindex(range(len(prefixes) + 1))
+                prefixes = pd.concat([prefixes, pd.DataFrame({'e_v': ['XP']})], ignore_index=True)
+                for j in list(result.columns):
+                    if j != "track_id":
+                        flattened_data = result[j][i]
+                        data = [self.extract_properties(el) for el in flattened_data]
+                        if j == 'p_nodes':
+                            for node in data:
+                                node['node1'] = int(node.pop('activity_id'))
+                                node['e_v'] = "v"
+                            prefixes = pd.concat([prefixes, pd.DataFrame(data)], ignore_index=True)
+                        if j == 'p_rels' and data != []:
+                            for rel in data:
+                                # for node 1 and node 2
+                                connnected_nodes = rel['connection'].split(':')[0].split('_')
+                                node1 = connnected_nodes[0]
+                                node2 = connnected_nodes[1]
+                                new_key1 = 'node1'
+                                new_key2 = 'node2'
+                                rel[new_key1] = int(node1)
+                                rel[new_key2] = int(node2)
+                                del rel['connection']
+                                # for track id
+                                rel['track_id'] = result['track_id'][i]
+                                rel['event_name'] = (
+                                        str(prefixes[(prefixes['node1'] == int(node1))
+                                                     & (prefixes['track_id'] == result['track_id'][i])]
+                                            ['event_name']).split()[1]
+                                        + "__" +
+                                        str(prefixes[(prefixes['node1'] == int(node2)) & (prefixes['track_id']
+                                                                                          == result['track_id'][i])]
+                                            ['event_name']).split()[1])
+                                rel['e_v'] = "e"
+                            prefixes = pd.concat([prefixes, pd.DataFrame(data)], ignore_index=True)
+        prefixes['start_time'] = prefixes['start_time'].apply(lambda x: self.format_date(x) if pd.notna(x) else None)
+        prefixes['finish_time'] = prefixes['finish_time'].apply(lambda x: self.format_date(x) if pd.notna(x) else None)
+        prefixes.to_csv('data/prefixes.csv', index=False)
+        finish = time.time()
+        print(f"Time for prefix generation: {finish-start:.6f} seconds")
+
+
+    def extract_properties(self, node):
+        return node._properties
 
     def generate_active_case(self):
         start = time.time()
@@ -118,15 +158,13 @@ if __name__ == "__main__":
 
     # Access the environment variables
     database_uri = os.getenv("DATABASE_URI")
-    username = os.getenv("USER")
-    password = os.getenv("PASSWORD")
+    username = os.getenv("USERNAME_NEO4J")
+    password = os.getenv("PASSWORD_NEO4J")
 
     # Now you can use these variables to connect to your database
     connection = ActiveCaseGeneration(database_uri, username, password)
-    # result, time_taken = connection.generate_active_case()
-    # connection.active_case_neo4j()
-    # greeter.print_greeting("hello, world")
     results = connection.active_case_neo4j()
+    connection.create_prefixes()
     # print(results)
     connection.close()
 
