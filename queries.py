@@ -115,6 +115,16 @@ class ActiveCaseGeneration:
         print(f"Active activities execution time with Neo4j: {elapsed_time:.6f} seconds")
         return result
 
+    def get_active_cases(self):
+        start_activities = self.driver.execute_query(
+            "MATCH (n) RETURN DISTINCT n.start_time as start_times",
+            database_="neo4j",
+            result_transformer_=neo4j.Result.to_df
+        )
+        start_activities['start_times'] = pd.to_datetime(start_activities['start_times'].
+                                                         apply(lambda x: x.to_native() if pd.notna(x) else None))
+        print('ciao')
+
 
 def active_case_db():
     start_time = time.time()
@@ -161,6 +171,7 @@ if __name__ == "__main__":
     # Now you can use these variables to connect to your database
     connection = ActiveCaseGeneration(database_uri, username, password)
     results = connection.active_case_neo4j()
+    connection.get_active_cases()
     # connection.create_prefixes()
     # print(results)
     connection.close()
