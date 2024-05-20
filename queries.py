@@ -15,14 +15,6 @@ class ActiveCaseGeneration:
     def close(self):
         self.driver.close()
 
-    # function to format the DateTime object
-    def format_date(self, dt):
-        if dt is not None:
-            iso_str = dt.iso_format()
-            formatted_str = iso_str.replace("T", "").replace("Z", "+00:00")
-            return formatted_str
-        return None
-
     def create_prefixes(self):
         start = time.time()
         prefixes = pd.DataFrame()
@@ -111,9 +103,10 @@ class ActiveCaseGeneration:
             database_="neo4j",
             result_transformer_=neo4j.Result.to_df
         )
-
-        result['start_time_prefix'] = result['start_time_prefix'].apply(self.format_date)
-        result['finish_time_last_activity'] = result['finish_time_last_activity'].apply(self.format_date)
+        result['start_time_prefix'] = pd.to_datetime(result['start_time_prefix'].
+                                                     apply(lambda x: x.to_native() if pd.notna(x) else None))
+        result['finish_time_last_activity'] = pd.to_datetime(result['finish_time_last_activity'].
+                                                             apply(lambda x: x.to_native() if pd.notna(x) else None))
 
         result.to_csv('data/active_activities_Neo4j.csv', index=False)
 
@@ -144,6 +137,11 @@ def active_case_db():
             case_data.append((case_id, index, start_time_prefix, finish_time_activity))
 
     df = pd.DataFrame(case_data, columns=['track_id', 'index', 'start_time_prefix', 'finish_time_last_activity'])
+    df['start_time_prefix'] = df['start_time_prefix'].apply(lambda x: str(x)[:18])
+    df['start_time_prefix'] = pd.to_datetime(df['start_time_prefix'], format='%Y-%m-%d%H:%M:%S', utc=True)
+    df['finish_time_last_activity'] = df['finish_time_last_activity'].apply(lambda x: str(x)[:18])
+    df['finish_time_last_activity'] = pd.to_datetime(df['finish_time_last_activity'], format='%Y-%m-%d%H:%M:%S',
+                                                     utc=True)
     df.to_csv('data/active_activities.csv', index=False)
 
     end_time = time.time()
@@ -163,7 +161,7 @@ if __name__ == "__main__":
     # Now you can use these variables to connect to your database
     connection = ActiveCaseGeneration(database_uri, username, password)
     results = connection.active_case_neo4j()
-    connection.create_prefixes()
+    # connection.create_prefixes()
     # print(results)
     connection.close()
 
