@@ -4,6 +4,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
 import neo4j
+from datetime import datetime
 
 
 class ActiveCaseGeneration:
@@ -34,8 +35,7 @@ class ActiveCaseGeneration:
                                                f"UNWIND p_nodes AS node1 "
                                                f"UNWIND p_nodes AS node2 "
                                                f"OPTIONAL MATCH (node1)-[r]-(node2) "
-                                               f"RETURN DISTINCT p_nodes, collect(DISTINCT r) as p_rels, track_id "
-                                               f"ORDER BY track_id",
+                                               f"RETURN DISTINCT p_nodes, collect(DISTINCT r) as p_rels, track_id",
                                                database_="neo4j",
                                                result_transformer_=neo4j.Result.to_df)
 
@@ -74,8 +74,10 @@ class ActiveCaseGeneration:
                                             ['event_name']).split()[1])
                                 rel['e_v'] = "e"
                             prefixes = pd.concat([prefixes, pd.DataFrame(data)], ignore_index=True)
-        prefixes['start_time'] = prefixes['start_time'].apply(lambda x: self.format_date(x) if pd.notna(x) else None)
-        prefixes['finish_time'] = prefixes['finish_time'].apply(lambda x: self.format_date(x) if pd.notna(x) else None)
+        prefixes['start_time'] = pd.to_datetime(prefixes['start_time'].
+                                                apply(lambda x: x.to_native() if pd.notna(x) else None))
+        prefixes['finish_time'] = pd.to_datetime(prefixes['finish_time'].
+                                                 apply(lambda x: x.to_native() if pd.notna(x) else None))
         prefixes.to_csv('data/prefixes.csv', index=False)
         finish = time.time()
         print(f"Time for prefix generation: {finish - start:.6f} seconds")
@@ -104,7 +106,7 @@ class ActiveCaseGeneration:
             "MATCH p = (activity: Event{event_name:'START'})-[*]->(track: Event) "
             "WITH apoc.coll.flatten(collect(nodes(p))) as nodes, activity.start_time AS start_time_prefix, activity "
             "UNWIND nodes as node "
-            "RETURN DISTINCT node.track_id as track_id, node.activity_id as activity_id, start_time_prefix, "
+            "RETURN DISTINCT node.track_id as track_id, node.activity_id as index, start_time_prefix, "
             "node.finish_time as finish_time_last_activity ",
             database_="neo4j",
             result_transformer_=neo4j.Result.to_df
