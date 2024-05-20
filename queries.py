@@ -92,7 +92,7 @@ class ActiveCaseGeneration:
         time_taken = end - start
         return result, time_taken
 
-    def active_case_neo4j(self):
+    def active_activity_neo4j(self):
         start_time = time.time()
         result = self.driver.execute_query(
             "MATCH p = (activity: Event{event_name:'START'})-[*]->(track: Event) "
@@ -107,7 +107,6 @@ class ActiveCaseGeneration:
                                                      apply(lambda x: x.to_native() if pd.notna(x) else None))
         result['finish_time_last_activity'] = pd.to_datetime(result['finish_time_last_activity'].
                                                              apply(lambda x: x.to_native() if pd.notna(x) else None))
-
         result.to_csv('data/active_activities_Neo4j.csv', index=False)
 
         end = time.time()
@@ -116,17 +115,36 @@ class ActiveCaseGeneration:
         return result
 
     def get_active_cases(self):
-        start_activities = self.driver.execute_query(
+        start = self.driver.execute_query(
             "MATCH (n) RETURN DISTINCT n.start_time as start_times",
             database_="neo4j",
             result_transformer_=neo4j.Result.to_df
         )
-        start_activities['start_times'] = pd.to_datetime(start_activities['start_times'].
-                                                         apply(lambda x: x.to_native() if pd.notna(x) else None))
-        print('ciao')
+        start['start_times'] = pd.to_datetime(start['start_times'].
+                                              apply(lambda x: x.to_native() if pd.notna(x) else None))
+        start_dates = start['start_times'].tolist()
+
+        active_activities = pd.read_csv('data/active_activities.csv')
+        active_activities['start_time_prefix'] = (active_activities['start_time_prefix'].
+                                                  apply(lambda x: str(x).replace(" ", "")[:18]))
+        active_activities['start_time_prefix'] = pd.to_datetime(active_activities['start_time_prefix'],
+                                                                format='%Y-%m-%d%H:%M:%S', utc=True)
+        active_activities['finish_time_last_activity'] = (active_activities['finish_time_last_activity'].
+                                                  apply(lambda x: str(x).replace(" ", "")[:18]))
+        active_activities['finish_time_last_activity'] = pd.to_datetime(active_activities['finish_time_last_activity'],
+                                                                format='%Y-%m-%d%H:%M:%S', utc=True)
+
+        prefixes = pd.read_csv('data/prefixes.csv')
+
+        for i in start_dates:
+            j = active_activities[active_activities['start_time_prefix'] <= i]
+            current_activity = j[j['finish_time_last_activity'] >= i]
+            for track_id in current_activity['track_id'].unique():
+                max_index = current_activity.groupby('track_id')['index'].max().iloc[0]
+                index = prefixes[(prefixes['node1'] == max_index) & (prefixes['track_id'] == track_id)].index[0]
 
 
-def active_case_db():
+def active_activity_db():
     start_time = time.time()
 
     with open('data/graphs.g', 'r') as file:
@@ -170,10 +188,10 @@ if __name__ == "__main__":
 
     # Now you can use these variables to connect to your database
     connection = ActiveCaseGeneration(database_uri, username, password)
-    results = connection.active_case_neo4j()
+    results = connection.active_activity_neo4j()
     connection.get_active_cases()
     # connection.create_prefixes()
     # print(results)
     connection.close()
 
-    active_case_db()
+    active_activity_db()
