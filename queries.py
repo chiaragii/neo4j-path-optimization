@@ -19,6 +19,14 @@ class ActiveCaseGeneration:
     def close(self):
         self.driver.close()
 
+    def import_data(self):
+        self.driver.execute_query("LOAD CSV FROM 'file:///prefix_log_13087.csv' "
+                                  "AS row MERGE (:Event{activity_id:toInteger(row[0]), event_name:row[1], "
+                                  "track_id:row[2], start_time:datetime(apoc.text.replace(apoc.text.replace(row[3], "
+                                  "'\+\d{2}:\d{2}$', ''), ' ', 'T')), "
+                                  "finish_time:datetime(apoc.text.replace(apoc.text.replace(row[4], '\+\d{2}:\d{2}$' "
+                                  ", ''), ' ', 'T')), resource:row[5]})")
+
     def create_prefixes(self):
         start = time.time()
         prefixes = pd.DataFrame()
@@ -271,7 +279,7 @@ if __name__ == "__main__":
     # save the prefixes in prefixes.csv file
     # connection.create_prefixes()
 
-    connection.close()
+    # connection.close()
 
     # save sequential database + final activities: python way
     # active_case_and_final_activity_dbs()
