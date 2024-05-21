@@ -34,7 +34,7 @@ class ActiveCaseGeneration:
                                                f"MATCH (l:Event) WHERE l.activity_id={k + 1} "
                                                f"AND l.track_id=node1.track_id "
                                                f"RETURN DISTINCT p_nodes, collect(DISTINCT r) as p_rels, "
-                                               f"track_id, collect(l) as label",
+                                               f"track_id, [l] as label",
                                                database_="neo4j",
                                                result_transformer_=neo4j.Result.to_df)
 
@@ -92,16 +92,21 @@ class ActiveCaseGeneration:
     def extract_properties(self, node):
         return node._properties
 
-    def generate_active_case(self):
+    def generate_active_case(self, s_prefix, f_prefix):
         start = time.time()
         print(start)
+
+        # se ci sono due attività parallele finali, viene ritornato solo il prefisso di lunghezza maggiore
         result = self.driver.execute_query(
-            "MATCH (activity: Event) WITH DISTINCT activity.start_time AS activity_start_time "
-            "MATCH p=(s:Event {event_name: 'START'})-[r*]->(e:Event) "
-            "WHERE e.start_time <= activity_start_time AND e.finish_time >= activity_start_time "
-            "RETURN activity_start_time, COLLECT(DISTINCT nodes(p)) as active_case, COLLECT(DISTINCT r) "
-            "as active_relationship, length(p)+1 as prefix_length "
-            "ORDER BY activity_start_time, prefix_length ")
+            f"MATCH (s:Event), (e:Event) "
+            f"WHERE s.event_name='START' s.track_id = e.track_id AND (s.start_time <= {s_prefix} OR "
+            f"s.start_time >= {s_prefix}) AND e.finish_time <= {f_prefix} AND e.track_id='173715' "
+            f"WITH COLLECT(e) as nodes, s "
+            f"UNWIND nodes as node1 "
+            f"UNWIND nodes as node2 "
+            f"OPTIONAL MATCH (node1)-[r]-(node2) "
+            f"RETURN DISTINCT nodes, COLLECT(DISTINCT r), s.track_id+'_'+size(nodes) as prefix_id",
+            database_="neo4j")
 
         end = time.time()
         time_taken = end - start
@@ -241,6 +246,9 @@ def get_prefix_information(s_prefix, f_prefix):
                                          (active_activities['start_time_prefix'] >= s_prefix)) &
                                         (active_activities['finish_time_last_activity'] <= f_prefix)]
     active_prefixes_keys = active_prefixes.loc[active_prefixes.groupby('track_id')['finish_time_last_activity'].idxmax()][['track_id', 'index']]
+    maximal_active_prefixes = list(active_prefixes_keys['track_id'].astype(str) + '_' + active_prefixes_keys['index'].astype(str))
+    complete_prefixes = prefixes[prefixes['prefix_id'].isin(maximal_active_prefixes)]
+
 
 
 if __name__ == "__main__":
@@ -261,14 +269,14 @@ if __name__ == "__main__":
     # connection.get_active_cases()
 
     # save the prefixes in prefixes.csv file
-    connection.create_prefixes()
+    # connection.create_prefixes()
 
     connection.close()
 
     # save sequential database + final activities: python way
     # active_case_and_final_activity_dbs()
 
-    # date1 = datetime(2011, 10, 1, 8, 11, 7, tzinfo=pytz.utc)
-    # date2 = datetime(2011, 10, 1, 8, 11, 7,
-                     #tzinfo=pytz.timezone('America/New_York'))
-    # get_prefix_information(date1, date2)
+    date1 = datetime(2011, 10, 1, 8, 11, 7, tzinfo=pytz.utc)
+    date2 = datetime(2011, 10, 1, 8, 11, 7,
+                     tzinfo=pytz.timezone('America/New_York'))
+    get_prefix_information(date1, date2)
