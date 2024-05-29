@@ -1,0 +1,62 @@
+Filtered files info
+
+File: filtered_prefix_log_10percent.csv
+Number of graphs: 1308
+Number of nodes: 31162
+Average number of nodes: 23.82
+Memory usage: 140.86 MB, CPU usage: 4.80%
+
+File: filtered_prefix_log_20percent.csv
+Number of graphs: 2617
+Number of nodes: 60372
+Average number of nodes: 23.07
+Memory usage: 143.03 MB, CPU usage: 8.60%
+
+File: filtered_prefix_log_30percent.csv
+Number of graphs: 3926
+Number of nodes: 88841
+Average number of nodes: 22.63
+Memory usage: 143.73 MB, CPU usage: 9.10%
+
+File: filtered_prefix_log_40percent.csv
+Number of graphs: 5234
+Number of nodes: 113933
+Average number of nodes: 21.77
+Memory usage: 145.07 MB, CPU usage: 9.50%
+
+File: filtered_prefix_log_50percent.csv
+Number of graphs: 6543
+Number of nodes: 143084
+Average number of nodes: 21.87
+Memory usage: 145.65 MB, CPU usage: 14.60%
+
+File: filtered_prefix_log_60percent.csv
+Number of graphs: 7852
+Number of nodes: 174410
+Average number of nodes: 22.21
+Memory usage: 147.33 MB, CPU usage: 11.00%
+
+File: filtered_prefix_log_70percent.csv
+Number of graphs: 9160
+Number of nodes: 204506
+Average number of nodes: 22.33
+Memory usage: 148.93 MB, CPU usage: 7.40%
+
+File: filtered_prefix_log_80percent.csv
+Number of graphs: 10469
+Number of nodes: 235315
+Average number of nodes: 22.48
+Memory usage: 150.58 MB, CPU usage: 12.20%
+
+File: filtered_prefix_log_90percent.csv
+Number of graphs: 11778
+Number of nodes: 263187
+Average number of nodes: 22.35
+Memory usage: 152.07 MB, CPU usage: 2.40%
+
+File: filtered_prefix_log_100percent.csv
+Number of graphs: 13087
+Number of nodes: 288374
+Average number of nodes: 22.04
+Memory usage: 151.68 MB, CPU usage: 4.20%
+
