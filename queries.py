@@ -134,6 +134,22 @@ class ActiveCaseGeneration:
         print(f"Active activities execution time with Neo4j: {elapsed_time:.6f} seconds")
         return result
 
+    def import_data(self):
+        start_time = time.time()
+        result = self.driver.execute_query(
+            "LOAD CSV FROM 'file:///prefix_log_2000.csv' "
+            "AS row MERGE (:Event{activity_id:toInteger(row[0]), "
+            "event_name:row[1], track_id:row[2], "
+            "start_time:datetime(apoc.text.replace(apoc.text.replace(row[3], '\+\d{2}:\d{2}$', ''), ' ', 'T')), "
+            "finish_time:datetime(apoc.text.replace(apoc.text.replace(row[4], '\+\d{2}:\d{2}$', ''), ' ', 'T')), "
+            "resource:row[5]}) ",
+            database_="neo4j",
+        )
+        end = time.time()
+        elapsed_time = end - start_time
+        print(f"{elapsed_time:.6f} seconds (2000)")
+        return result
+
 
 def active_case_and_final_activity_dbs():
     start_time = time.time()
@@ -250,7 +266,6 @@ def get_prefix_information(s_prefix, f_prefix):
     complete_prefixes = prefixes[prefixes['prefix_id'].isin(maximal_active_prefixes)]
 
 
-
 if __name__ == "__main__":
     # Load environment variables from .env file
     load_dotenv("config/database_conf.env")
@@ -266,6 +281,8 @@ if __name__ == "__main__":
     # save sequential database: neo4j way
     # results = connection.active_case_neo4j()
 
+    results = connection.import_data()
+
     # connection.get_active_cases()
 
     # save the prefixes in prefixes.csv file
@@ -276,7 +293,9 @@ if __name__ == "__main__":
     # save sequential database + final activities: python way
     # active_case_and_final_activity_dbs()
 
-    date1 = datetime(2011, 10, 1, 8, 11, 7, tzinfo=pytz.utc)
+    '''date1 = datetime(2011, 10, 1, 8, 11, 7, tzinfo=pytz.utc)
     date2 = datetime(2011, 10, 1, 8, 11, 7,
                      tzinfo=pytz.timezone('America/New_York'))
-    get_prefix_information(date1, date2)
+    get_prefix_information(date1, date2)'''
+
+    # get_some_prefixes()
