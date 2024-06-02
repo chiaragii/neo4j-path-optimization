@@ -2,11 +2,14 @@ import os
 import re
 import time
 import psutil
+import threading
 
 import pandas as pd
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
 
+if os.path.exists('data\output_files\memory_cpu.txt'):
+    os.remove('data\output_files\memory_cpu.txt')
 
 class ActiveCaseGeneration:
 
@@ -16,9 +19,9 @@ class ActiveCaseGeneration:
     def close(self):
         self.driver.close()
 
-    def import_data(self):
+    def import_data(self, stop_event):
         start_time = time.time()
-        output_dir = 'data/output_files/1000'
+        output_dir = 'data/output_files/500'
 
         files = sorted(
             [f for f in os.listdir(output_dir) if f.startswith('filtered_prefix_log_') and f.endswith('.csv')],
@@ -28,7 +31,7 @@ class ActiveCaseGeneration:
 
         for file in first_files:
             file_num = re.findall(r'\d+', file)[0]
-            file_path = f"file:///filtered_prefix_log_{file_num}_1000.csv"
+            file_path = f"file:///filtered_prefix_log_{file_num}_500.csv"
 
             start_time_file = time.time()
             result = self.driver.execute_query(
@@ -41,6 +44,7 @@ class ActiveCaseGeneration:
                 database_="neo4j",
             )
             end_time_file = time.time()
+            stop_event.set()
             elapsed_time = end_time_file - start_time_file
             print(f"{elapsed_time:.6f} seconds")
 
@@ -49,6 +53,25 @@ class ActiveCaseGeneration:
         print(f"{elapsed_time:.6f} seconds")
 
         return result
+
+    # Define a function to monitor CPU and memory usage
+    def monitor_resources(stop_event, interval=1):
+        process = psutil.Process()
+        cpu_usage = []
+        memory_usage = []
+
+        while not stop_event.is_set():
+            cpu = process.cpu_percent(interval=interval)
+            memory = process.memory_info().rss / (1024 ** 2)  # Convert to MB
+            time.sleep(1)
+            cpu_usage.append(cpu)
+            memory_usage.append(memory)
+
+            file_path = 'data\output_files\memory_cpu.txt'
+            with open(file_path, 'a') as log_file:
+                log_file.write(f"CPU: {cpu}% | Memory: {memory:.2f} MB\n")
+            print(f"CPU: {cpu}% | Memory: {memory:.2f} MB")
+        return cpu_usage, memory_usage
 
 
 def get_some_prefixes():
@@ -120,6 +143,25 @@ def get_first_n_prefixes():
     filtered_df.to_csv('data/prefixes/prefix_log_2000.csv', sep=',', header=False, index=False)
 
 
+# Define a function to monitor CPU and memory usage
+def monitor_resources(stop_event, interval=1):
+    process = psutil.Process()
+    cpu_usage = []
+    memory_usage = []
+
+    while not stop_event.is_set():
+        cpu = process.cpu_percent(interval=interval)
+        memory = process.memory_info().rss / (1024 ** 2)  # Convert to MB
+        cpu_usage.append(cpu)
+        memory_usage.append(memory)
+
+        file_path = 'data\output_files\memory_cpu.txt'
+        with open(file_path, 'w') as log_file:
+            log_file.write(f"CPU: {cpu}% | Memory: {memory:.2f} MB")
+        print(f"CPU: {cpu}% | Memory: {memory:.2f} MB")
+    return cpu_usage, memory_usage
+
+
 if __name__ == "__main__":
     # Load environment variables from .env file
     load_dotenv("config/database_conf.env")
@@ -131,11 +173,19 @@ if __name__ == "__main__":
 
     # Connect to graph database
     connection = ActiveCaseGeneration(database_uri, username, password)
+    stop_event = threading.Event()
 
-    # results = connection.import_data()
+    # Start monitoring in a separate thread
+    monitor_thread = threading.Thread(target=monitor_resources, args=(stop_event,))
+    monitor_thread.start()
+
+    # Run the query
+    results = connection.import_data(stop_event)
+    # Wait for the monitoring thread to finish
+    monitor_thread.join()
 
     connection.close()
 
-    get_some_prefixes_percentual()
+    # get_some_prefixes_percentual()
     # get_first_n_prefixes()
     # get_some_prefixes()
