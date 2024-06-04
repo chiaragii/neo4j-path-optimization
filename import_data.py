@@ -1,6 +1,8 @@
 import os
 import re
 import time
+
+import neo4j
 import psutil
 import threading
 
@@ -11,6 +13,9 @@ from neo4j import GraphDatabase
 if os.path.exists('data\output_files\memory_cpu.txt'):
     os.remove('data\output_files\memory_cpu.txt')
 
+pid = 22188
+print(pid)
+
 class ActiveCaseGeneration:
 
     def __init__(self, uri, user, password):
@@ -18,6 +23,23 @@ class ActiveCaseGeneration:
 
     def close(self):
         self.driver.close()
+
+    def import_data2(self,stop_event):
+        start_time = time.time()
+        result = self.driver.execute_query(
+            "LOAD CSV FROM 'file:///filtered_prefix_log_10percent.csv' "
+            "AS row MERGE (:Event{activity_id:toInteger(row[0]), "
+            "event_name:row[1], track_id:row[2], "
+            "start_time:datetime(apoc.text.replace(apoc.text.replace(row[3], '\+\d{2}:\d{2}$', ''), ' ', 'T')), "
+            "finish_time:datetime(apoc.text.replace(apoc.text.replace(row[4], '\+\d{2}:\d{2}$', ''), ' ', 'T')), "
+            "resource:row[5]}) ",
+            database_="neo4j",
+        )
+        end = time.time()
+        stop_event.set()
+        elapsed_time = end - start_time
+        print(f"{elapsed_time:.6f} seconds (2000)")
+        return result
 
     def import_data(self, stop_event):
         start_time = time.time()
@@ -52,6 +74,30 @@ class ActiveCaseGeneration:
         elapsed_time = end_time - start_time
         print(f"{elapsed_time:.6f} seconds")
 
+        return result
+
+    def create_prefixes(self, stop_event):
+        start = time.time()
+        prefixes = pd.DataFrame()
+        max_len = self.driver.execute_query("MATCH (n:Event) RETURN max(n.activity_id) AS max_activity_id")[0][0][0]
+        # Concatenating the empty row to the existing DataFrame
+        for k in range(1, max_len - 1):
+            result = self.driver.execute_query(f"MATCH (e:Event) WHERE e.activity_id <= {k} "
+                                               f"WITH collect(e) AS p_nodes, e.track_id as track_id "
+                                               f"WHERE size(p_nodes)={k} "
+                                               f"UNWIND p_nodes AS node1 "
+                                               f"UNWIND p_nodes AS node2 "
+                                               f"OPTIONAL MATCH (node1)-[r]-(node2) "
+                                               f"MATCH (l:Event) WHERE l.activity_id={k + 1} "
+                                               f"AND l.track_id=node1.track_id "
+                                               f"RETURN DISTINCT p_nodes, collect(DISTINCT r) as p_rels, "
+                                               f"track_id, [l] as label",
+                                               database_="neo4j",
+                                               result_transformer_=neo4j.Result.to_df)
+
+        finish = time.time()
+        stop_event.set()
+        print(f"Time for prefix generation: {finish - start:.6f} seconds")
         return result
 
 
@@ -126,7 +172,7 @@ def get_first_n_prefixes():
 
 # Define a function to monitor CPU and memory usage
 def monitor_resources(stop_event, interval=1):
-    process = psutil.Process(os.getpid())
+    process = psutil.Process(pid)
     cpu_usage = []
     memory_usage = []
 
@@ -136,7 +182,7 @@ def monitor_resources(stop_event, interval=1):
         cpu_usage.append(cpu)
         memory_usage.append(memory)
 
-        file_path = 'data\output_files\memory_cpu.txt'
+        file_path = 'data\output_files\prefixes.txt'
         with open(file_path, 'a') as log_file:
             log_file.write(f"CPU: {cpu}% | Memory: {memory:.2f} MB\n")
         print(f"CPU: {cpu}% | Memory: {memory:.2f} MB")
@@ -161,7 +207,7 @@ if __name__ == "__main__":
     monitor_thread.start()
 
     # Run the query
-    results = connection.import_data(stop_event)
+    results = connection.import_data2(stop_event)
     # Wait for the monitoring thread to finish
     monitor_thread.join()
 
