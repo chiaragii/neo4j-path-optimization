@@ -54,25 +54,6 @@ class ActiveCaseGeneration:
 
         return result
 
-    # Define a function to monitor CPU and memory usage
-    def monitor_resources(stop_event, interval=1):
-        process = psutil.Process()
-        cpu_usage = []
-        memory_usage = []
-
-        while not stop_event.is_set():
-            cpu = process.cpu_percent(interval=interval)
-            memory = process.memory_info().rss / (1024 ** 2)  # Convert to MB
-            time.sleep(1)
-            cpu_usage.append(cpu)
-            memory_usage.append(memory)
-
-            file_path = 'data\output_files\memory_cpu.txt'
-            with open(file_path, 'a') as log_file:
-                log_file.write(f"CPU: {cpu}% | Memory: {memory:.2f} MB\n")
-            print(f"CPU: {cpu}% | Memory: {memory:.2f} MB")
-        return cpu_usage, memory_usage
-
 
 def get_some_prefixes():
     df = pd.read_csv('data/prefixes/prefix_log.csv', header=None)
@@ -145,7 +126,7 @@ def get_first_n_prefixes():
 
 # Define a function to monitor CPU and memory usage
 def monitor_resources(stop_event, interval=1):
-    process = psutil.Process()
+    process = psutil.Process(os.getpid())
     cpu_usage = []
     memory_usage = []
 
@@ -156,8 +137,8 @@ def monitor_resources(stop_event, interval=1):
         memory_usage.append(memory)
 
         file_path = 'data\output_files\memory_cpu.txt'
-        with open(file_path, 'w') as log_file:
-            log_file.write(f"CPU: {cpu}% | Memory: {memory:.2f} MB")
+        with open(file_path, 'a') as log_file:
+            log_file.write(f"CPU: {cpu}% | Memory: {memory:.2f} MB\n")
         print(f"CPU: {cpu}% | Memory: {memory:.2f} MB")
     return cpu_usage, memory_usage
 
