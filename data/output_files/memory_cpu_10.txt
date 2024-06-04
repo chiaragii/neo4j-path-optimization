@@ -1,0 +1,12 @@
+File: prefix_log_10.csv (223 nodi)
+Prova 1
+CPU: 0.0% | Memory: 1169.03 MB
+CPU: 1.5% | Memory: 1169.03 MB
+CPU: 282.8% | Memory: 1236.54 MB
+Tempo: 2.988961 seconds
+
+Prova 2
+CPU: 9.2% | Memory: 1211.23 MB
+CPU: 4.6% | Memory: 1211.23 MB
+CPU: 121.5% | Memory: 1211.96 MB
+Tempo: 2.474231 seconds

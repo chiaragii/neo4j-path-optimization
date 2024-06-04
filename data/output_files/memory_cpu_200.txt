@@ -1,0 +1,51 @@
+File: prefix_log_10.csv (4859 nodi)
+Prova 1
+CPU: 1.6% | Memory: 1219.82 MB
+CPU: 3.1% | Memory: 1219.82 MB
+CPU: 164.6% | Memory: 1220.18 MB
+CPU: 150.0% | Memory: 1226.45 MB
+CPU: 169.3% | Memory: 1232.03 MB
+CPU: 194.0% | Memory: 1259.82 MB
+CPU: 221.9% | Memory: 1266.98 MB
+CPU: 149.3% | Memory: 1275.49 MB
+CPU: 170.3% | Memory: 1275.09 MB
+CPU: 129.7% | Memory: 1264.02 MB
+CPU: 45.3% | Memory: 1264.10 MB
+CPU: 73.8% | Memory: 1222.71 MB
+CPU: 97.0% | Memory: 1222.71 MB
+CPU: 73.4% | Memory: 1222.80 MB
+CPU: 73.8% | Memory: 1222.82 MB
+CPU: 73.8% | Memory: 1222.83 MB
+CPU: 112.5% | Memory: 1222.85 MB
+CPU: 63.1% | Memory: 1222.88 MB
+CPU: 41.5% | Memory: 1222.88 MB
+CPU: 225.0% | Memory: 1227.11 MB
+CPU: 75.4% | Memory: 1223.12 MB
+CPU: 72.4% | Memory: 1224.20 MB
+Tempo: 21.569412 seconds
+
+Prova 2
+CPU: 7.8% | Memory: 1217.66 MB
+CPU: 0.0% | Memory: 1217.66 MB
+CPU: 190.6% | Memory: 1219.92 MB
+CPU: 156.9% | Memory: 1228.58 MB
+CPU: 146.2% | Memory: 1228.90 MB
+CPU: 168.8% | Memory: 1223.58 MB
+CPU: 230.7% | Memory: 1233.37 MB
+CPU: 156.2% | Memory: 1233.45 MB
+CPU: 178.4% | Memory: 1225.02 MB
+CPU: 112.4% | Memory: 1225.02 MB
+CPU: 73.4% | Memory: 1225.11 MB
+CPU: 75.0% | Memory: 1225.12 MB
+CPU: 44.6% | Memory: 1223.00 MB
+CPU: 95.3% | Memory: 1222.00 MB
+CPU: 124.7% | Memory: 1223.06 MB
+CPU: 93.8% | Memory: 1222.02 MB
+CPU: 92.3% | Memory: 1222.10 MB
+CPU: 106.2% | Memory: 1222.12 MB
+CPU: 90.6% | Memory: 1222.15 MB
+CPU: 68.8% | Memory: 1222.16 MB
+CPU: 107.7% | Memory: 1222.16 MB
+CPU: 75.4% | Memory: 1222.16 MB
+CPU: 54.7% | Memory: 1222.82 MB
+Tempo: 22.842203 seconds
