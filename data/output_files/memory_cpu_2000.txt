@@ -1537,3 +1537,5 @@ CPU: 36.9% | Memory: 1220.33 MB
 CPU: 49.3% | Memory: 1220.34 MB
 CPU: 72.3% | Memory: 1275.75 MB
 CPU: 30.8% | Memory: 1276.05 MB
+
+Tempo: 1555.826346 seconds

@@ -1,0 +1,22 @@
+CPU: 7.7% | Memory: 1147.05 MB
+CPU: 3.1% | Memory: 1147.05 MB
+CPU: 112.4% | Memory: 1182.30 MB
+CPU: 218.8% | Memory: 1198.09 MB
+CPU: 482.9% | Memory: 1229.39 MB
+CPU: 546.0% | Memory: 1242.75 MB
+CPU: 569.6% | Memory: 1251.39 MB
+CPU: 600.0% | Memory: 1291.89 MB
+CPU: 475.2% | Memory: 1497.12 MB
+CPU: 660.9% | Memory: 1505.81 MB
+CPU: 558.8% | Memory: 1632.88 MB
+CPU: 692.2% | Memory: 1635.11 MB
+CPU: 692.2% | Memory: 1648.24 MB
+CPU: 667.2% | Memory: 1676.75 MB
+CPU: 671.9% | Memory: 1747.12 MB
+CPU: 710.5% | Memory: 1750.08 MB
+CPU: 711.2% | Memory: 1757.34 MB
+CPU: 659.8% | Memory: 1806.52 MB
+CPU: 665.3% | Memory: 1810.95 MB
+CPU: 401.6% | Memory: 1814.68 MB
+
+Tempo: 19.864300 seconds
