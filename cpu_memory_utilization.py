@@ -1,5 +1,25 @@
 import matplotlib.pyplot as plt
 
+def plot2d():
+    y = [2.988961, 7.877312, 21.569412, 128.600391, 498.800449, 1555.826346]
+    x = [223, 2385, 4859, 12409, 23902, 46452]
+
+    plt.plot(x, y, label='Tempo di Caricamento in funzione del numero di nodi')
+
+    plt.ylabel('Tempo di caricamento (secondi)')
+    plt.xlabel('Numero di nodi totali')
+    plt.title('Tempo di Caricamento in funzione dei nodi')
+
+    # Aggiunta della legenda
+    plt.legend()
+
+    # Mostra il grafico
+    plt.show()
+
+
+
+
+
 
 def plot_data(cpu_values, memory_values, prova, file):
     # Plotting CPU and Memory data for each "Prova"
@@ -18,7 +38,8 @@ def plot_data(cpu_values, memory_values, prova, file):
     plt.tight_layout()
     plt.savefig("data/output_files/cpu_monitor/"+file + ", prova: " + str(prova))
 
-file = "data/output_files/memory_cpu_2000.txt"
+file_name = "memory_cpu_opt_4G"
+file = "memory_cpu_opt_4G.txt"
 # Reading data from file and plotting for each "Prova"
 with open(file, "r") as file:
     prova = 1
@@ -27,16 +48,15 @@ with open(file, "r") as file:
     for line in file:
         if line.startswith("Prova"):
             if cpu_values:  # Plot previous prova data
-                plot_data(cpu_values, memory_values, prova, file.name.split("/")[2].split("_")[2].
-                          replace(".txt","")+" nodes")
+                plot_data(cpu_values, memory_values, prova, file_name)
                 prova += 1
                 cpu_values = []
                 memory_values = []
         elif line.startswith("CPU"):
-            cpu, memory = line.strip().split(" | ")
+            cpu, memory, time = line.strip().split(" | ")
             cpu_values.append(float(cpu.split(": ")[1].strip("%")))
             memory_values.append(float(memory.split(": ")[1].strip(" MB")))
 
     # Plot last prova data
-    plot_data(cpu_values, memory_values, prova, file.name.split("/")[2].split("_")[2].
-                          replace(".txt","")+" nodes")
+    plot_data(cpu_values, memory_values, prova, file_name)
+

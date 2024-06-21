@@ -18,27 +18,36 @@ print(pid)
 
 class ActiveCaseGeneration:
 
+
+
+
+
     def __init__(self, uri, user, password):
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
 
     def close(self):
         self.driver.close()
 
-    def import_data2(self,stop_event):
-        start_time = time.time()
-        result = self.driver.execute_query(
-            "LOAD CSV FROM 'file:///filtered_prefix_log_10percent.csv' "
-            "AS row MERGE (:Event{activity_id:toInteger(row[0]), "
-            "event_name:row[1], track_id:row[2], "
-            "start_time:datetime(apoc.text.replace(apoc.text.replace(row[3], '\+\d{2}:\d{2}$', ''), ' ', 'T')), "
-            "finish_time:datetime(apoc.text.replace(apoc.text.replace(row[4], '\+\d{2}:\d{2}$', ''), ' ', 'T')), "
-            "resource:row[5]}) ",
-            database_="neo4j",
-        )
-        end = time.time()
+    def create_prefixes(self, stop_event):
+        start = time.time()
+        max_len = self.driver.execute_query("MATCH (n:Event) RETURN max(n.activity_id) AS max_activity_id")[0][0][0]
+        # Concatenating the empty row to the existing DataFrame
+        for k in range(1, max_len - 1):
+            result = self.driver.execute_query(f"MATCH (e:Event) WHERE e.activity_id <= {k} "
+                                               f"WITH collect(e) AS p_nodes, e.track_id as track_id "
+                                               f"WHERE size(p_nodes)={k} "
+                                               f"UNWIND p_nodes AS node1 "
+                                               f"UNWIND p_nodes AS node2 "
+                                               f"OPTIONAL MATCH (node1)-[r]-(node2) "
+                                               f"MATCH (l:Event) WHERE l.activity_id={k + 1} "
+                                               f"AND l.track_id=node1.track_id "
+                                               f"RETURN DISTINCT p_nodes, collect(DISTINCT r) as p_rels, "
+                                               f"track_id, [l] as label",
+                                               database_="neo4j",
+                                               result_transformer_=neo4j.Result.to_df)
+        finish = time.time()
         stop_event.set()
-        elapsed_time = end - start_time
-        print(f"{elapsed_time:.6f} seconds (2000)")
+        print(f"Time for prefix generation: {finish - start:.6f} seconds")
         return result
 
     def import_data(self, stop_event):
@@ -162,6 +171,23 @@ def get_some_prefixes_percentual():
                            f'Memory usage: {memory_usage:.2f} MB, CPU usage: {cpu_usage:.2f}%\n\n')
 
 
+def trim_file_until_xp():
+    target_count = 201
+    xp_count = 0
+    trimmed_lines = []
+    with open("BPI12_with_SE_instance_graphs.g", 'r') as file:
+        for line in file:
+            trimmed_lines.append(line)
+            if "XP" in line:
+                xp_count += 1
+                if xp_count == target_count:
+                    break
+    return trimmed_lines
+
+
+
+
+
 def get_first_n_prefixes():
     df = pd.read_csv('data/prefixes/prefix_log.csv', header=None)
     df.columns = ['Index', 'Event', 'Case_ID', 'Start', 'Finish', 'Resource']
@@ -182,7 +208,7 @@ def monitor_resources(stop_event, interval=1):
         cpu_usage.append(cpu)
         memory_usage.append(memory)
 
-        file_path = 'data\output_files\prefixes.txt'
+        file_path = 'data\output_files\memory_cpu.txt'
         with open(file_path, 'a') as log_file:
             log_file.write(f"CPU: {cpu}% | Memory: {memory:.2f} MB\n")
         print(f"CPU: {cpu}% | Memory: {memory:.2f} MB")
@@ -199,20 +225,25 @@ if __name__ == "__main__":
     password = os.getenv("PASSWORD_NEO4J")
 
     # Connect to graph database
-    connection = ActiveCaseGeneration(database_uri, username, password)
-    stop_event = threading.Event()
+    # connection = ActiveCaseGeneration(database_uri, username, password)
+    # stop_event = threading.Event()
 
     # Start monitoring in a separate thread
-    monitor_thread = threading.Thread(target=monitor_resources, args=(stop_event,))
-    monitor_thread.start()
+    # monitor_thread = threading.Thread(target=monitor_resources, args=(stop_event,))
+    # monitor_thread.start()
 
     # Run the query
-    results = connection.import_data2(stop_event)
+    # results = connection.create_prefixes(stop_event)
     # Wait for the monitoring thread to finish
-    monitor_thread.join()
+    # monitor_thread.join()
 
-    connection.close()
+    # connection.close()
 
     # get_some_prefixes_percentual()
     # get_first_n_prefixes()
     # get_some_prefixes()
+
+    trimmed_content = trim_file_until_xp()
+    with open("timmed_200", 'w') as file:
+        for line in trimmed_content:
+            file.write(line)
